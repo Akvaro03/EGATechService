@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32922.545
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EGATechService", "EGATechService\EGATechService.csproj", "{B9FC80C3-56D7-417A-A690-5F5E2D93FC15}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "EGATechServiceInstaller", "EGATechServiceInstaller\EGATechServiceInstaller.vdproj", "{3689906A-980D-4935-A202-21E1AD102F5A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B9FC80C3-56D7-417A-A690-5F5E2D93FC15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9FC80C3-56D7-417A-A690-5F5E2D93FC15}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9FC80C3-56D7-417A-A690-5F5E2D93FC15}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9FC80C3-56D7-417A-A690-5F5E2D93FC15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3689906A-980D-4935-A202-21E1AD102F5A}.Debug|Any CPU.ActiveCfg = Debug
+		{3689906A-980D-4935-A202-21E1AD102F5A}.Release|Any CPU.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C4A07B3D-DEF8-493A-BA2B-ABD097248AB3}
+	EndGlobalSection
+EndGlobal
