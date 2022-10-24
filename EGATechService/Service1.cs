@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.ServiceProcess;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Timers;
 namespace EGATechService
@@ -51,8 +52,15 @@ namespace EGATechService
             WriteToFile("Inicio del servicio" + DateTime.Now);
             WriteToFile(" ; Temperatura ; Humedad; Fecha");
 
+
+
+
+
+
+
+
             timer.Elapsed += new ElapsedEventHandler(OnElapsedTime);
-            timer.Interval = 5000; //number in milisecinds  
+            timer.Interval = 40000; //number in milisecinds  
             timer.Enabled = true;
         }
         protected override void OnStop()
@@ -65,27 +73,70 @@ namespace EGATechService
             return Math.Round(float.Parse(temperatureParsed, CultureInfo.InvariantCulture.NumberFormat), 2);
         }
 
-
-        private async void OnElapsedTime(object source, ElapsedEventArgs e)
+        private DateTime ParseTimezone(DateTime tempDate)
         {
-            Feed feed = await getChannelField(1);
-            double temperature = ParseTemperature(feed.field1);
-
-            WriteToFile(" ; " + temperature.ToString() + "; 20% ; " + feed.created_at, temperature);
+            return TimeZoneInfo.ConvertTimeFromUtc(tempDate, TimeZoneInfo.Local);
         }
 
 
-        public void WriteToFile(string Message, double temp = 0)
+        private void OnElapsedTime(object source, ElapsedEventArgs e)
         {
-            string path = @"C:\EGATechLogs";
+            Task<Feed>feedTask = getChannelField(1);
+            feedTask.Wait();
+            Feed feed = feedTask.Result;
+
+            double temperature = ParseTemperature(feed.field1);
+
+            WriteToFile(" ; " + temperature.ToString() + "; 20% ; " + ParseTimezone(feed.created_at));
+        }
+
+
+        private void verifyDirectory (string path)
+        {
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
-            string filepath = path + "\\ServiceLog_" + temp + DateTime.Now.Date.ToShortDateString().Replace('/', '_') + ".csv";
+        }
+
+        public void WriteToFile(string Message)
+        {
+            string logsPath = @"C:\EGATechLogs";
+            verifyDirectory(logsPath);
+
+            string configPath = $"{logsPath}\\Config.json";
+            if (!File.Exists(configPath))
+            {
+                // Create a file to write to.   
+
+                using (StreamWriter sw = File.CreateText(configPath))
+                {
+                    sw.WriteLine("fad");
+                }
+            }
+            //else
+            //{
+            //    using (StreamReader jsonStream = File.OpenText(configPath))
+            //    {
+            //        var json = jsonStream.ReadToEnd();
+            //        JsonElement product = JsonSerializer.Deserialize<JsonElement>(json);
+            //    }
+            //}
+
+
+
+
+            string yearLogsPath = $"{logsPath}\\EGATech_{DateTime.Now.ToString("yyyy")}";
+            verifyDirectory(yearLogsPath);
+
+            string monthLogsPath = $"{yearLogsPath}\\EGATech_{DateTime.Now.ToString("MMMM")}";
+            verifyDirectory(monthLogsPath);
+
+            string filepath = monthLogsPath + "\\ServiceLog_" + DateTime.Now.ToShortDateString().Replace('/', '_') + ".csv";
             if (!File.Exists(filepath))
             {
                 // Create a file to write to.   
+                
                 using (StreamWriter sw = File.CreateText(filepath))
                 {
                     sw.WriteLine(Message);
