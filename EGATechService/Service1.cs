@@ -20,16 +20,17 @@ namespace EGATechService
         Timer timer = new Timer();
 
         const string ApiURL = "https://api.thingspeak.com";
-        const string ApiKey = "1889060";
 
+        ConfigJson configJson;
         public Service1()
         {
             InitializeComponent();
+            configJson = new ConfigJson();
         }
 
         private string setApiURL(int channelID)
         {
-            string channelFieldRoute = $"/channels/{ApiKey}/fields/{channelID}.json?results=1";
+            string channelFieldRoute = $"/channels/{configJson.ApiKey}/fields/{channelID}.json?results=1";
             return $"{ApiURL}{channelFieldRoute}";
         }
 
@@ -49,15 +50,9 @@ namespace EGATechService
 
         protected override void OnStart(string[] args)
         {
+            verifyIfConfigJsonExist();
             WriteToFile("Inicio del servicio" + DateTime.Now);
             WriteToFile(" ; Temperatura ; Humedad; Fecha");
-
-
-
-
-
-
-
 
             timer.Elapsed += new ElapsedEventHandler(OnElapsedTime);
             timer.Interval = 40000; //number in milisecinds  
@@ -78,16 +73,46 @@ namespace EGATechService
             return TimeZoneInfo.ConvertTimeFromUtc(tempDate, TimeZoneInfo.Local);
         }
 
+        private void verifyIfConfigJsonExist()
+        {
+            string jsonPath = $"{configJson.LogsPath}\\Config.json";
+            if (!File.Exists(jsonPath))
+            {
+                using (StreamWriter sw = File.CreateText(jsonPath))
+                {
+                    var jsonString = JsonSerializer.Serialize(configJson);
+                    sw.Write(jsonString);
+
+                }
+            }
+            else
+            {
+                using (StreamReader r = new StreamReader("file.json"))
+                {
+                    string json = r.ReadToEnd();
+                    configJson = JsonSerializer.Deserialize<ConfigJson>(json);
+                }
+            }
+        }
+
 
         private void OnElapsedTime(object source, ElapsedEventArgs e)
         {
-            Task<Feed>feedTask = getChannelField(1);
-            feedTask.Wait();
-            Feed feed = feedTask.Result;
+            verifyIfConfigJsonExist();
 
-            double temperature = ParseTemperature(feed.field1);
+            if (configJson.ApiKey == null)
+            {
+                WriteToFile("Error ; APIKey nulo");
+            } else
+            {
+                Task<Feed>feedTask = getChannelField(1);
+                feedTask.Wait();
+                Feed feed = feedTask.Result;
 
-            WriteToFile(" ; " + temperature.ToString() + "; 20% ; " + ParseTimezone(feed.created_at));
+                double temperature = ParseTemperature(feed.field1);
+
+                WriteToFile(" ; " + temperature.ToString() + "; 20% ; " + ParseTimezone(feed.created_at));
+            }
         }
 
 
@@ -101,30 +126,8 @@ namespace EGATechService
 
         public void WriteToFile(string Message)
         {
-            string logsPath = @"C:\EGATechLogs";
+            string logsPath = configJson.LogsPath;
             verifyDirectory(logsPath);
-
-            string configPath = $"{logsPath}\\Config.json";
-            if (!File.Exists(configPath))
-            {
-                // Create a file to write to.   
-
-                using (StreamWriter sw = File.CreateText(configPath))
-                {
-                    sw.WriteLine("fad");
-                }
-            }
-            //else
-            //{
-            //    using (StreamReader jsonStream = File.OpenText(configPath))
-            //    {
-            //        var json = jsonStream.ReadToEnd();
-            //        JsonElement product = JsonSerializer.Deserialize<JsonElement>(json);
-            //    }
-            //}
-
-
-
 
             string yearLogsPath = $"{logsPath}\\EGATech_{DateTime.Now.ToString("yyyy")}";
             verifyDirectory(yearLogsPath);
@@ -151,6 +154,16 @@ namespace EGATechService
             }
         }
     }
+
+    public class ConfigJson
+    {
+        public string ApiKey { get; set; }
+        public string LogsPath { get; set; } = @"C:\EGATechLogs";
+
+        //miliseconds
+        public int IntervalTime { get; set; } = 40000;
+    }
+
     public class Channel
     {
         public int id { get; set; }
