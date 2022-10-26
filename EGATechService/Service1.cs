@@ -17,7 +17,8 @@ namespace EGATechService
 {
     public partial class Service1 : ServiceBase
     {
-        Timer timer = new Timer();
+        Timer timerTemperatures = new Timer();
+        Timer verificationTimer = new Timer();
 
         const string ApiURL = "https://api.thingspeak.com";
 
@@ -50,17 +51,20 @@ namespace EGATechService
 
         protected override void OnStart(string[] args)
         {
-            verifyIfConfigJsonExist();
             WriteToFile("Inicio del servicio" + DateTime.Now);
             WriteToFile(" ; Temperatura ; Humedad; Fecha");
 
-            timer.Elapsed += new ElapsedEventHandler(OnElapsedTime);
-            timer.Interval = 40000; //number in milisecinds  
-            timer.Enabled = true;
+            timerTemperatures.Elapsed += new ElapsedEventHandler(OnElapsedTime);
+            timerTemperatures.Interval = configJson.IntervalTime; //number in milisecinds  
+            timerTemperatures.Enabled = true;
+
+            verificationTimer.Elapsed += new ElapsedEventHandler(VerificationTimerElapsed);
+            verificationTimer.Interval = 5000;
+            verificationTimer.Enabled = true;
         }
         protected override void OnStop()
         {
-            WriteToFile("Service is stopped at " + DateTime.Now);
+            WriteToFile("El servicio se detuvo ;" + DateTime.Now);
         }
         public double ParseTemperature (string temp)
         {
@@ -71,6 +75,12 @@ namespace EGATechService
         private DateTime ParseTimezone(DateTime tempDate)
         {
             return TimeZoneInfo.ConvertTimeFromUtc(tempDate, TimeZoneInfo.Local);
+        }
+
+        private void VerificationTimerElapsed (object source, ElapsedEventArgs e)
+        {
+            verifyIfConfigJsonExist();
+            CheckIfPathsExist();
         }
 
         private void verifyIfConfigJsonExist()
@@ -87,11 +97,11 @@ namespace EGATechService
             }
             else
             {
-                using (StreamReader r = new StreamReader("file.json"))
-                {
-                    string json = r.ReadToEnd();
-                    configJson = JsonSerializer.Deserialize<ConfigJson>(json);
-                }
+                string text = File.ReadAllText(jsonPath);
+                var jsonconfig = JsonSerializer.Deserialize<ConfigJson>(text);
+                configJson.LogsPath = jsonconfig.LogsPath;
+                configJson.ApiKey = jsonconfig.ApiKey;
+                configJson.IntervalTime = jsonconfig.IntervalTime;
             }
         }
 
@@ -100,7 +110,7 @@ namespace EGATechService
         {
             verifyIfConfigJsonExist();
 
-            if (configJson.ApiKey == null)
+            if (configJson.ApiKey == 0)
             {
                 WriteToFile("Error ; APIKey nulo");
             } else
@@ -124,7 +134,7 @@ namespace EGATechService
             }
         }
 
-        public void WriteToFile(string Message)
+        private string CheckIfPathsExist ()
         {
             string logsPath = configJson.LogsPath;
             verifyDirectory(logsPath);
@@ -136,6 +146,12 @@ namespace EGATechService
             verifyDirectory(monthLogsPath);
 
             string filepath = monthLogsPath + "\\ServiceLog_" + DateTime.Now.ToShortDateString().Replace('/', '_') + ".csv";
+            return filepath;
+        }
+
+        public void WriteToFile(string Message)
+        {
+            string filepath = CheckIfPathsExist();
             if (!File.Exists(filepath))
             {
                 // Create a file to write to.   
@@ -157,7 +173,7 @@ namespace EGATechService
 
     public class ConfigJson
     {
-        public string ApiKey { get; set; }
+        public int ApiKey { get; set; } = 0;
         public string LogsPath { get; set; } = @"C:\EGATechLogs";
 
         //miliseconds
