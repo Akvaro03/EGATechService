@@ -17,24 +17,42 @@ namespace EGATechService
 {
     public partial class Service1 : ServiceBase
     {
+        /// <summary>
+        /// Timer para leer los valores de la api y luego escribirlos en un archivo .csv
+        /// </summary>
         Timer timerTemperatures = new Timer();
+
+        /// <summary>Timer para verificar que exista el archivo json de configuracion y 
+        /// los directorios correspondientes
+        /// </summary>
         Timer verificationTimer = new Timer();
 
         const string ApiURL = "https://api.thingspeak.com";
-
         ConfigJson configJson;
+
         public Service1()
         {
             InitializeComponent();
             configJson = new ConfigJson();
         }
 
+        /// <summary>
+        /// Establece la ruta de la api en base al apikey del config.json
+        /// y depende del canal que queramos solicitar de la API de Thingspeak
+        /// </summary>
+        /// <param name="channelID">Canal de la API a obtener los datos</param>
+        /// <returns>Url de la solicitud completa</returns>
         private string setApiURL(int channelID)
         {
             string channelFieldRoute = $"/channels/{configJson.ApiKey}/fields/{channelID}.json?results=1";
             return $"{ApiURL}{channelFieldRoute}";
         }
 
+        /// <summary>
+        /// Obtiene la temperatura medida desde la API de Thingspeak
+        /// </summary>
+        /// <param name="channelID">Canal de la API a obtener los datos</param>
+        /// <returns>La ultima medicion brindada por la API</returns>
         public async Task<Feed> getChannelField(int channelID)
         {
 
@@ -66,16 +84,28 @@ namespace EGATechService
         {
             WriteToFile("El servicio se detuvo ;" + DateTime.Now);
         }
+
+        /// <summary>
+        /// Convierte la temperatura de tipo string a double
+        /// </summary>
+        /// <param name="temp">La temperatura a transformar</param>
+        /// <returns>La temperatura parseada a double</returns>
         public double ParseTemperature (string temp)
         {
             string temperatureParsed = temp.Substring(0, 5);
             return Math.Round(float.Parse(temperatureParsed, CultureInfo.InvariantCulture.NumberFormat), 2);
         }
 
+        /// <summary>
+        /// Transforma la fecha y hora del Feed a la zona horaria local
+        /// </summary>
+        /// <param name="tempDate">La fecha del Feed</param>
+        /// <returns>La fecha con nuestra zona horaria local</returns>
         private DateTime ParseTimezone(DateTime tempDate)
         {
             return TimeZoneInfo.ConvertTimeFromUtc(tempDate, TimeZoneInfo.Local);
         }
+
 
         private void VerificationTimerElapsed (object source, ElapsedEventArgs e)
         {
@@ -83,6 +113,10 @@ namespace EGATechService
             CheckIfPathsExist();
         }
 
+        /// <summary>
+        /// Verifica si el archivo Config.json existe, si este no existe lo crea y le escribe los valores de la clase 
+        /// instanciada configJson. Si ya existe simplemente lee el archivo y lo escribe en la clase instanciada de configJson
+        /// </summary>
         private void verifyIfConfigJsonExist()
         {
             string jsonPath = $"{configJson.LogsPath}\\Config.json";
@@ -125,7 +159,10 @@ namespace EGATechService
             }
         }
 
-
+        /// <summary>
+        /// Verifica si un directorio existe, si este no existe lo crea en el path indicado en el parametro
+        /// </summary>
+        /// <param name="path">ruta del directorio</param>
         private void verifyDirectory (string path)
         {
             if (!Directory.Exists(path))
@@ -134,6 +171,11 @@ namespace EGATechService
             }
         }
 
+        /// <summary>
+        /// Verifica ruta por ruta si existen los directorios o archivos, si no existen los crea y asi con todos.
+        /// Las carpetas se crean por año y mes. El archivo .csv se crea por día.
+        /// </summary>
+        /// <returns>La ruta final en donde se va a encontrar el archivo .csv</returns>
         private string CheckIfPathsExist ()
         {
             string logsPath = configJson.LogsPath;
@@ -149,13 +191,15 @@ namespace EGATechService
             return filepath;
         }
 
+        /// <summary>
+        /// Crea los directorios hasta el archivo .csv y escribe un mensaje dentro del csv
+        /// </summary>
+        /// <param name="Message">El mensaje a escribir dentro del csv.</param>
         public void WriteToFile(string Message)
         {
             string filepath = CheckIfPathsExist();
             if (!File.Exists(filepath))
             {
-                // Create a file to write to.   
-                
                 using (StreamWriter sw = File.CreateText(filepath))
                 {
                     sw.WriteLine(Message);
@@ -171,6 +215,9 @@ namespace EGATechService
         }
     }
 
+    /// <summary>
+    /// Clase que indica los datos que va a contener el archivo json de configuración
+    /// </summary>
     public class ConfigJson
     {
         public int ApiKey { get; set; } = 0;
@@ -180,6 +227,9 @@ namespace EGATechService
         public int IntervalTime { get; set; } = 40000;
     }
 
+    /// <summary>
+    /// Datos del canal configurado desde la 
+    /// </summary>
     public class Channel
     {
         public int id { get; set; }
@@ -193,6 +243,9 @@ namespace EGATechService
         public int last_entry_id { get; set; }
     }
 
+    /// <summary>
+    /// Mediciones del API de Thingspeak
+    /// </summary>
     public class Feed
     {
         public DateTime created_at { get; set; }
@@ -200,6 +253,9 @@ namespace EGATechService
         public string field1 { get; set; }
     }
 
+    /// <summary>
+    /// Tipo de objeto que devuelve el API de Thingspeak
+    /// </summary>
     public class Root
     {
         public Channel channel { get; set; }
