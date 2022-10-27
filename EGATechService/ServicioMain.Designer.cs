@@ -1,6 +1,6 @@
 ﻿namespace EGATechService
 {
-    partial class Service1
+    partial class ServicioMain
     {
         /// <summary> 
         /// Variable del diseñador necesaria.
