@@ -10,7 +10,6 @@ namespace EGATechService
 {
     public class Verifications
     {
-        private List<string> filepath;
         /// <summary>
         /// Verifica si un directorio existe, si este no existe lo crea en el path indicado en el parametro
         /// </summary>
@@ -27,8 +26,10 @@ namespace EGATechService
         /// Verifica ruta por ruta si existen los directorios o archivos, si no existen los crea y asi con todos.
         /// Las carpetas se crean por año y mes. El archivo .csv se crea por día.
         /// </summary>
+        /// <param name="configJson">Objeto de configuracion del json con el que se va obtener la ruta principal de todos los directorios</param>
+        /// <param name="ApiKey">El key con la que se va a nombrar el directorio</param>
         /// <returns>La ruta final en donde se va a encontrar el archivo .csv</returns>
-        public List<string> CheckIfPathsExist(ConfigJson configJson)
+        public string CheckIfPathsExist(ConfigJson configJson, int ApiKey)
         {
 
             string logsPath = configJson.LogsPath;
@@ -40,15 +41,10 @@ namespace EGATechService
             string monthLogsPath = $"{yearLogsPath}\\EGATech_{DateTime.Now.ToString("MMMM")}";
             verifyDirectory(monthLogsPath);
 
-            for(int i = 0; i < configJson.ApiKey.Count; i++)
-            {
-                string apiKeyLogsPath = $"{monthLogsPath}\\API_{configJson.ApiKey.Count}";
-                verifyDirectory(apiKeyLogsPath);
+            string apiKeyLogsPath = $"{monthLogsPath}\\API_{ApiKey}";
+            verifyDirectory(apiKeyLogsPath);
 
-                filepath.Add(apiKeyLogsPath + "\\ServiceLog_" + DateTime.Now.ToShortDateString().Replace('/', '_') + ".csv");
-            }   
-
-            return filepath;
+            return apiKeyLogsPath + "\\ServiceLog_" + DateTime.Now.ToShortDateString().Replace('/', '_') + ".csv";
 
         }
 

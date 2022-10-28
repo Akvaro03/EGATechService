@@ -36,13 +36,18 @@ namespace EGATechService
         {
             InitializeComponent();
             configJson = new ConfigJson();
-            apiClass = new ApiClass(configJson);
+            apiClass = new ApiClass();
         }
 
         
         protected override void OnStart(string[] args)
         {
-            //WriteToFile("Inicio del servicio" + DateTime.Now);
+            foreach (int key in configJson.ApiKey)
+            {
+                string filepath = verifications.CheckIfPathsExist(configJson, key);
+                WriteToFile("Inicio del servicio ; " + DateTime.Now, filepath);
+
+            }
 
             timerTemperatures.Elapsed += new ElapsedEventHandler(OnElapsedTime);
             timerTemperatures.Interval = configJson.IntervalTime; //number in milisecinds  
@@ -71,7 +76,9 @@ namespace EGATechService
         private void VerificationTimerElapsed (object source, ElapsedEventArgs e)
         {
             verifications.verifyIfConfigJsonExist(configJson);
-            verifications.CheckIfPathsExist(configJson);
+            foreach(int key in configJson.ApiKey) { 
+                verifications.CheckIfPathsExist(configJson, key);
+            }
         }
 
        
@@ -79,13 +86,11 @@ namespace EGATechService
         {
             verifications.verifyIfConfigJsonExist(configJson);
 
-            if (configJson.ApiKey.Count == 0)
+           
+            foreach (int key in configJson.ApiKey)
             {
-                WriteToFile("Error ; APIKey nulo");
-            } else
-            {
-                foreach (int key in configJson.ApiKey)
-                {
+                string filepath = verifications.CheckIfPathsExist(configJson, key);
+                try {
                     Task<Feed> TaskTemperatures = apiClass.getChannelField(1, key);
                     TaskTemperatures.Wait();
                     Feed feedTemp = TaskTemperatures.Result;
@@ -112,12 +117,17 @@ namespace EGATechService
                         humidityFinal = "Error en Humedad";
 
                     }
-
-                    WriteToFile($" ; {temperaturaFinal} ; {humidityFinal} ; {ParseTimezone(feedTemp.created_at)}");
+                    
+                    WriteToFile($" ; {temperaturaFinal} ; {humidityFinal} ; {ParseTimezone(feedTemp.created_at)}", filepath);
+                }
+                catch
+                {
+                    WriteToFile("API Error", filepath);
                 }
 
-
+                
             }
+            
         }
 
         
@@ -125,27 +135,25 @@ namespace EGATechService
         /// Crea los directorios hasta el archivo .csv y escribe un mensaje dentro del csv
         /// </summary>
         /// <param name="Message">El mensaje a escribir dentro del csv.</param>
-        public void WriteToFile(string Message)
+        /// <param name="path">La ruta del archivo en donde se va a escribir el mensaje</param>
+        public void WriteToFile(string Message, string path)
         {
-            IList<string> filepath = verifications.CheckIfPathsExist(configJson);
-
-            foreach (string path in filepath)
+            
+            if (!File.Exists(path))
             {
-                if (!File.Exists(path))
+                using (StreamWriter sw = File.CreateText(path))
                 {
-                    using (StreamWriter sw = File.CreateText(path))
-                    {
-                        sw.WriteLine(Message);
-                    }
-                }
-                else
-                {
-                    using (StreamWriter sw = File.AppendText(path))
-                    {
-                        sw.WriteLine(Message);
-                    }
+                    sw.WriteLine(Message);
                 }
             }
+            else
+            {
+                using (StreamWriter sw = File.AppendText(path))
+                {
+                    sw.WriteLine(Message);
+                }
+            }
+            
             
         }
     }
