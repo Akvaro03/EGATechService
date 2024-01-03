@@ -99,8 +99,9 @@ namespace EGATechService
                     TaskHumidity.Wait();
                     Feed feedHumidity = TaskHumidity.Result;
 
-                    string temperaturaFinal = feedTemp.field1;
-                    string humidityFinal = feedHumidity.field2;
+                    string temperaturaFinal = feedTemp.field1.Trim();
+                    string humidityFinal = feedHumidity.field2.Trim();
+                    DateTime timeCreated = ParseTimezone(feedTemp.created_at);
 
                     if (feedTemp.field1 == null)
                     {
@@ -117,8 +118,8 @@ namespace EGATechService
                         humidityFinal = "Error en Humedad";
 
                     }
-                    
-                    WriteToFile($" ; {temperaturaFinal} ; {humidityFinal} ; {ParseTimezone(feedTemp.created_at)}", filepath);
+                    string strToSend = $" ; {temperaturaFinal} ; {humidityFinal} ; {timeCreated}";
+                    WriteToFile($"{strToSend}", filepath);
                 }
                 catch
                 {
